@@ -1,0 +1,97 @@
+"use client";
+import React, { useEffect, useState } from "react";
+
+import { Headings } from "@/components/table/type";
+import {
+  fetchData,
+  saveSelectedCoin,
+  updateBackendData,
+} from "@/service/coinApi";
+import Table from "@/components/table/table";
+import Popup from "@/components/popup/popup";
+
+const headings: Headings = ["volume", "rate", "cap", "liquidity"];
+
+type Option = {
+  name: string;
+  code: string;
+};
+
+type CoinData = {
+  name: string;
+  symbol: string;
+  volume: number;
+  rate: number;
+  cap: number;
+  liquidity: number;
+};
+
+const CoinListPage = () => {
+  const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
+  const [tableData, setTableData] = useState<CoinData[]>([]);
+
+  const options: Option[] = [
+    { name: "Bitcoin", code: "BTC" },
+    { name: "Ethereum", code: "ETH" },
+    { name: "Solana", code: "SOL" },
+    { name: "USD Coin", code: "USDC" },
+    { name: "Dogecoin", code: "DOGE" },
+  ];
+
+  const handleOpenPopup = () => {
+    setIsPopupOpen(true);
+  };
+
+  const handleClosePopup = () => {
+    setIsPopupOpen(false);
+  };
+
+  const handleOptionSelect = async (selectedOption: Option) => {
+    await saveSelectedCoin(selectedOption.name, selectedOption.code);
+    const res = await fetchData(selectedOption.name);
+    console.log(res);
+    setTableData(res as CoinData[] | []);
+    updateBackendData();
+  };
+
+  useEffect(() => {
+    localStorage.setItem("coinCode", "ETH");
+    localStorage.setItem("coinName", "Ethereum");
+    (async () => {
+      const res = await fetchData("Ethereum");
+      setTableData(res as CoinData[] | []);
+    })();
+  }, []);
+
+  return (
+    <div className="my-10">
+      <div className="my-4">
+        <button
+          onClick={handleOpenPopup}
+          className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+        >
+          Change Coin
+        </button>
+      </div>
+
+      {!!tableData?.length ? (
+        <div className="pt-10 overflow-auto">
+          <Table headings={headings} data={tableData} />
+        </div>
+      ) : (
+        <></>
+      )}
+
+      {isPopupOpen && (
+        <Popup
+          defaultValue="ETH"
+          options={options}
+          onClose={handleClosePopup}
+          onSelect={handleOptionSelect}
+        />
+      )}
+    </div>
+  );
+};
+
+export default CoinListPage;
