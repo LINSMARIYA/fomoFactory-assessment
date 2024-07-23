@@ -62,24 +62,10 @@ const CoinListPage = () => {
   const selectedCoinName = localStorage.getItem("selectedCoinName") || "";
 
   useEffect(() => {
-    fetchData(selectedCoinName);
-    const interval = setInterval(() => {
-      (async () => {
-        const res = await fetchData(selectedCoinName);
-        dispatch(setData(res));
-        setTableData(res);
-      })();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [selectedCoinName]);
-
-  useEffect(() => {
     localStorage.setItem("selectedCoinCode", "ETC");
     localStorage.setItem("selectedCoinName", "Ethereum");
     (async () => {
-      const res = await fetchData("Ethereum");
-      setTableData(res);
-      dispatch(setData(res));
+      await updateBackendData();
     })();
   }, []);
 

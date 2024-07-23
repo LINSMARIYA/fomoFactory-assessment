@@ -80,6 +80,7 @@ export async function GET() {
   };
 
   setInterval(async () => {
+    console.log("coinDB");
     callData;
   }, POLLING_INTERVAL);
 
