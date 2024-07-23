@@ -4,14 +4,21 @@ import CoinDataModel from "@/app/models/coin";
 import selectedCoin from "@/app/models/selectedCoin";
 
 export async function GET() {
-  const POLLING_INTERVAL = 5000;
+  const POLLING_INTERVAL = 100;
   const MAX_ENTRIES = 19;
   const coinCodeArray = ["ETH", "BTC", "SOL", "USDC", "DOGE"];
-  const fetchCoinData = async (coinCode: string) => {
+  const coinListNames = [
+    "Bitcoin",
+    "Ethereum",
+    "Solana",
+    "USD Coin",
+    "Dogecoin",
+  ];
+  const fetchCoinData = async () => {
     await dbConnect();
 
     const res = await fetch(
-      new Request("https://api.livecoinwatch.com/coins/single"),
+      new Request("https://api.livecoinwatch.com/coins/map"),
       {
         method: "POST",
         headers: new Headers({
@@ -19,9 +26,13 @@ export async function GET() {
           "x-api-key": "eb3b10c7-1b3f-4c88-b41d-65254f23c678",
         }),
         body: JSON.stringify({
+          codes: coinCodeArray,
           currency: "USD",
-          code: coinCode,
-          meta: true,
+          sort: "rank",
+          order: "ascending",
+          offset: 0,
+          limit: 0,
+          meta: false,
         }),
       }
     );
@@ -33,56 +44,55 @@ export async function GET() {
     return res.json();
   };
 
-  const pollAndSaveDate = async (coinCode: string) => {
+  const pollAndSaveDate = async () => {
     try {
       await dbConnect();
       const selected = await selectedCoin.findOne().sort({ createdAt: -1 });
 
-      const data = await fetchCoinData(coinCode);
-      const { name, symbol, volume, rate, cap, liquidity } = data;
-      const newCoin = {
-        name: name,
-        symbol: symbol,
-        volume: volume,
-        rate: rate,
-        cap: cap,
-        liquidity: liquidity,
-      };
-      console.log(newCoin.name);
-      const coin = new CoinDataModel(newCoin);
-      await coin.save();
+      const desiredCoins = await fetchCoinData();
 
-      const totalEntries = await CoinDataModel.find({
-        name: selected.name,
-      }).countDocuments();
+      desiredCoins.forEach((item: any) => {
+        const { volume, rate, cap, code } = item;
+        const newCoin = {
+          code: code,
+          volume: volume,
+          rate: rate,
+          cap: cap,
+        };
 
-      if (totalEntries > MAX_ENTRIES) {
-        // Find and delete the oldest entries
-        const oldestEntries = await CoinDataModel.find({
-          name: selected.name,
-        })
-          .sort({ createdAt: 1 })
-          .limit(totalEntries - MAX_ENTRIES);
-        const oldestEntryIds = oldestEntries.map((entry) => entry._id);
-        await CoinDataModel.deleteMany({ _id: { $in: oldestEntryIds } });
+        const coin = new CoinDataModel(newCoin);
+        coin.save();
+      });
+      for (let cName of coinCodeArray) {
+        const totalEntries = await CoinDataModel.find({
+          name: cName,
+        }).countDocuments();
+
+        if (totalEntries > MAX_ENTRIES) {
+          // Find and delete the oldest entries
+          const oldestEntries = await CoinDataModel.find({
+            name: cName,
+          })
+            .sort({ createdAt: 1 })
+            .limit(totalEntries - MAX_ENTRIES);
+          const oldestEntryIds = oldestEntries.map((entry) => entry._id);
+          await CoinDataModel.deleteMany({ _id: { $in: oldestEntryIds } });
+        }
       }
     } catch (error) {
       return NextResponse.json(
         { status: 500 },
-        { statusText: "Coin data fetched" }
+        { statusText: "Coin data fetch error" }
       );
     }
   };
-  const callData = async () => {
-    for (let i = 0; i < coinCodeArray.length; i++) {
-      await pollAndSaveDate(coinCodeArray[i]);
-    }
-  };
 
-  setInterval(async () => {
-    console.log("coinDB");
-    callData;
+  setInterval(() => {
+    pollAndSaveDate();
   }, POLLING_INTERVAL);
 
-  return NextResponse.json({ status: 200 });
+  return NextResponse.json(
+    { status: 200 },
+    { statusText: "Coin data fetched" }
+  );
 }

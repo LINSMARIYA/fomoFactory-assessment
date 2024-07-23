@@ -2,7 +2,6 @@ import React, { FC } from "react";
 import { TableProps } from "./type";
 
 const Table: FC<TableProps> = ({ headings, data }) => {
-  console.log(data);
   return (
     <div className="bg-[#293143] rounded-md p-4">
       <table style={{ borderCollapse: "collapse", width: "100%" }}>

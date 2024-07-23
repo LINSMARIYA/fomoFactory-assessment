@@ -13,7 +13,7 @@ import Popup from "@/components/popup/popup";
 import { setData } from "@/app/lib/tableReducer";
 import { RootState } from "@/app/lib/rootReducer";
 
-const headings: Headings = ["volume", "rate", "cap", "liquidity"];
+const headings: Headings = ["volume", "rate", "cap"];
 
 type Option = {
   name: string;
@@ -59,32 +59,37 @@ const CoinListPage = () => {
     updateBackendData();
   };
 
-  const selectedCoinName = localStorage.getItem("selectedCoinName") || "";
+  const selectedCoinCode = localStorage.getItem("selectedCoinCode") || "";
 
   useEffect(() => {
-    fetchData(selectedCoinName);
+    fetchData(selectedCoinCode);
     const interval = setInterval(() => {
       (async () => {
-        const res = await fetchData(selectedCoinName);
+        const res = await fetchData(selectedCoinCode);
         dispatch(setData(res));
         setTableData(res);
       })();
     }, 5000);
     return () => clearInterval(interval);
-  }, [selectedCoinName]);
+  }, [selectedCoinCode]);
 
   useEffect(() => {
     localStorage.setItem("selectedCoinCode", "ETC");
     localStorage.setItem("selectedCoinName", "Ethereum");
     (async () => {
       await updateBackendData();
+      const res = await fetchData(selectedCoinCode);
+      setTableData(res);
+      dispatch(setData(res));
     })();
   }, []);
 
   return (
     <div className="my-10">
-      <h1>{selectedCoinName}</h1>
-      <div className="my-4">
+      <h1 className="font-medium text-xl text-center w-full">
+        {localStorage.getItem("selectedCoinName")}
+      </h1>
+      <div className="my-4 w-full">
         <button
           onClick={handleOpenPopup}
           className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
@@ -94,7 +99,7 @@ const CoinListPage = () => {
       </div>
 
       {!!tableData?.length ? (
-        <div className="pt-10 overflow-auto">
+        <div className="pt-10 w-full h-full">
           <Table headings={headings} data={tableData} />
         </div>
       ) : (

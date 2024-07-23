@@ -1,10 +1,7 @@
 import { Schema, model, models } from "mongoose";
 
 const CoinSchema = new Schema({
-  name: {
-    type: String,
-  },
-  symbol: {
+  code: {
     type: String,
   },
   rate: {
@@ -16,9 +13,7 @@ const CoinSchema = new Schema({
   cap: {
     type: String,
   },
-  liquidity: {
-    type: String,
-  },
+
   date: {
     type: Date,
     default: Date.now(),

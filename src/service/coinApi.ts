@@ -1,7 +1,7 @@
-export const fetchData = async (coinName: string) => {
+export const fetchData = async (coinCode: string) => {
   try {
     const res = await fetch(
-      `/api/getCoinData?coinName=${encodeURIComponent(coinName)}`,
+      `/api/getCoinData?coinCode=${encodeURIComponent(coinCode)}`,
       {
         method: "GET",
       }
@@ -38,11 +38,10 @@ export const saveSelectedCoin = async (name: string, code: string) => {
 
 export const updateBackendData = async () => {
   try {
-    const response = await fetch("/api/coins", {
+    await fetch("/api/coins", {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
-    console.log(response);
   } catch (error) {
     console.log("error");
   }

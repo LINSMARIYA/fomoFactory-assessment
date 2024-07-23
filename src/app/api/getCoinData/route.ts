@@ -7,9 +7,9 @@ export async function GET(req: Request) {
   try {
     await dbConnect();
     const url = new URL(req.url);
-    const coinName = url.searchParams.get("coinName") || "";
+    const coinCode = url.searchParams.get("coinCode") || "";
 
-    const data = await CoinDataModel.find({ name: coinName })
+    const data = await CoinDataModel.find({ code: coinCode })
       .sort({
         createdAt: -1,
       })
