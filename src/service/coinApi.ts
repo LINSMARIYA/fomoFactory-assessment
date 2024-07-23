@@ -4,7 +4,6 @@ export const fetchData = async (coinName: string) => {
       `/api/getCoinData?coinName=${encodeURIComponent(coinName)}`,
       {
         method: "GET",
-        // body: coinName,
       }
     );
 

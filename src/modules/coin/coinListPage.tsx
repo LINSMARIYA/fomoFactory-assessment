@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 import { Headings } from "@/components/table/type";
 import {
@@ -9,6 +10,8 @@ import {
 } from "@/service/coinApi";
 import Table from "@/components/table/table";
 import Popup from "@/components/popup/popup";
+import { setData } from "@/app/lib/tableReducer";
+import { RootState } from "@/app/lib/rootReducer";
 
 const headings: Headings = ["volume", "rate", "cap", "liquidity"];
 
@@ -28,8 +31,10 @@ type CoinData = {
 
 const CoinListPage = () => {
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
+  const dispatch = useDispatch();
   const [tableData, setTableData] = useState<CoinData[]>([]);
-
+  // const tableData = useSelector((state: RootState) => state.table.data) || [];
+  // const tableData = [];
   const options: Option[] = [
     { name: "Bitcoin", code: "BTC" },
     { name: "Ethereum", code: "ETH" },
@@ -47,24 +52,40 @@ const CoinListPage = () => {
   };
 
   const handleOptionSelect = async (selectedOption: Option) => {
+    localStorage.setItem("selectedCoinCode", selectedOption.code);
+    localStorage.setItem("selectedCoinName", selectedOption.name);
     await saveSelectedCoin(selectedOption.name, selectedOption.code);
-    const res = await fetchData(selectedOption.name);
-    console.log(res);
-    setTableData(res as CoinData[] | []);
+
     updateBackendData();
   };
 
+  const selectedCoinName = localStorage.getItem("selectedCoinName") || "";
+
   useEffect(() => {
-    localStorage.setItem("coinCode", "ETH");
-    localStorage.setItem("coinName", "Ethereum");
+    fetchData(selectedCoinName);
+    const interval = setInterval(() => {
+      (async () => {
+        const res = await fetchData(selectedCoinName);
+        dispatch(setData(res));
+        setTableData(res);
+      })();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [selectedCoinName]);
+
+  useEffect(() => {
+    localStorage.setItem("selectedCoinCode", "ETC");
+    localStorage.setItem("selectedCoinName", "Ethereum");
     (async () => {
       const res = await fetchData("Ethereum");
-      setTableData(res as CoinData[] | []);
+      setTableData(res);
+      dispatch(setData(res));
     })();
   }, []);
 
   return (
     <div className="my-10">
+      <h1>{selectedCoinName}</h1>
       <div className="my-4">
         <button
           onClick={handleOpenPopup}

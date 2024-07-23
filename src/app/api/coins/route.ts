@@ -6,10 +6,9 @@ import selectedCoin from "@/app/models/selectedCoin";
 export async function GET() {
   const POLLING_INTERVAL = 5000;
   const MAX_ENTRIES = 19;
-
-  const fetchCoinData = async () => {
+  const coinCodeArray = ["ETH", "BTC", "SOL", "USDC", "DOGE"];
+  const fetchCoinData = async (coinCode: string) => {
     await dbConnect();
-    const selected = await selectedCoin.findOne().sort({ createdAt: -1 });
 
     const res = await fetch(
       new Request("https://api.livecoinwatch.com/coins/single"),
@@ -21,7 +20,7 @@ export async function GET() {
         }),
         body: JSON.stringify({
           currency: "USD",
-          code: selected.code,
+          code: coinCode,
           meta: true,
         }),
       }
@@ -34,12 +33,13 @@ export async function GET() {
     return res.json();
   };
 
-  const pollAndSaveDate = async () => {
+  const pollAndSaveDate = async (coinCode: string) => {
     try {
       await dbConnect();
-      const data = await fetchCoinData();
-      const { name, symbol, volume, rate, cap, liquidity } = data;
+      const selected = await selectedCoin.findOne().sort({ createdAt: -1 });
 
+      const data = await fetchCoinData(coinCode);
+      const { name, symbol, volume, rate, cap, liquidity } = data;
       const newCoin = {
         name: name,
         symbol: symbol,
@@ -48,15 +48,19 @@ export async function GET() {
         cap: cap,
         liquidity: liquidity,
       };
+      console.log(newCoin.name);
       const coin = new CoinDataModel(newCoin);
-      const totalEntries = await CoinDataModel.find({
-        name: newCoin.name,
-      }).countDocuments();
       await coin.save();
+
+      const totalEntries = await CoinDataModel.find({
+        name: selected.name,
+      }).countDocuments();
 
       if (totalEntries > MAX_ENTRIES) {
         // Find and delete the oldest entries
-        const oldestEntries = await CoinDataModel.find({ name: newCoin.name })
+        const oldestEntries = await CoinDataModel.find({
+          name: selected.name,
+        })
           .sort({ createdAt: 1 })
           .limit(totalEntries - MAX_ENTRIES);
         const oldestEntryIds = oldestEntries.map((entry) => entry._id);
@@ -69,9 +73,14 @@ export async function GET() {
       );
     }
   };
+  const callData = async () => {
+    for (let i = 0; i < coinCodeArray.length; i++) {
+      await pollAndSaveDate(coinCodeArray[i]);
+    }
+  };
 
   setInterval(async () => {
-    await pollAndSaveDate();
+    callData;
   }, POLLING_INTERVAL);
 
   return NextResponse.json({ status: 200 });
