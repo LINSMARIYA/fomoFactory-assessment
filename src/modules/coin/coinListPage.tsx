@@ -105,7 +105,7 @@ const CoinListPage = () => {
 
       {isPopupOpen && (
         <Popup
-          defaultValue="ETH"
+          defaultValue={localStorage.getItem("selectedCoinCode") || "ETH"}
           options={options}
           onClose={handleClosePopup}
           onSelect={handleOptionSelect}
